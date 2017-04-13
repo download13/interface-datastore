@@ -4,6 +4,8 @@
 const path = require('path')
 const uuid = require('uuid/v4')
 
+const pathSep = new Buffer(path.sep, 'utf8')[0]
+
 /**
  * A Key represents the unique identifier of an object.
  * Our Key scheme is inspired by file systems and Google App Engine key model.
@@ -38,7 +40,7 @@ class Key {
       this.clean()
     }
 
-    if (this._buf.length === 0 || this._buf[0] !== 47) {
+    if (this._buf.length === 0 || this._buf[0] !== pathSep) {
       throw new Error(`Invalid key: ${this.toString()}`)
     }
   }
@@ -80,7 +82,7 @@ class Key {
    *
    */
   static withNamespaces (list /* : Array<string> */) /* : Key */ {
-    return new Key(list.join('/'))
+    return new Key(list.join(path.sep))
   }
 
   /**
@@ -104,18 +106,18 @@ class Key {
    */
   clean () {
     if (!this._buf || this._buf.length === 0) {
-      this._buf = new Buffer('/')
+      this._buf = new Buffer(path.sep)
     }
 
-    if (this._buf[0] !== 47 /* / is 47 */) {
-      this._buf = Buffer.concat([new Buffer('/'), this._buf])
+    if (this._buf[0] !== pathSep) {
+      this._buf = Buffer.concat([new Buffer(path.sep), this._buf])
     }
 
     this._buf = new Buffer(path.normalize(this.toString()))
 
     // normalize does not remove trailing slashes
     if (this.toString().length > 1) {
-      this._buf = new Buffer(this.toString().replace(/\/$/, ''))
+      this._buf = new Buffer(this.toString().replace(new RegExp(`${path.sep}$`), ''))
     }
   }
 
@@ -194,7 +196,7 @@ class Key {
    *
    */
   list () /* : Array<string> */ {
-    return this.toString().split('/').slice(1)
+    return this.toString().split(path.sep).slice(1)
   }
 
   /**
@@ -249,7 +251,7 @@ class Key {
    *
    */
   path () /* : Key */ {
-    return new Key(this.parent().toString() + '/' + this.type())
+    return new Key(this.parent().toString() + path.sep + this.type())
   }
 
   /**
@@ -265,10 +267,10 @@ class Key {
   parent () /* : Key */ {
     const list = this.list()
     if (list.length === 1) {
-      return new Key('/', false)
+      return new Key(path.sep, false)
     }
 
-    return new Key(list.slice(0, -1).join('/'))
+    return new Key(list.slice(0, -1).join(path.sep))
   }
 
   /**
@@ -283,9 +285,9 @@ class Key {
    *
    */
   child (key /* : Key */) /* : Key */ {
-    if (this.toString() === '/') {
+    if (this.toString() === path.sep) {
       return key
-    } else if (key.toString() === '/') {
+    } else if (key.toString() === path.sep) {
       return this
     }
 
